@@ -2,226 +2,169 @@
 
 import { useMemo, useState } from "react";
 
-export default function Page() {
-  const [monthlyGoal, setMonthlyGoal] = useState(""); // formatted: 100.000
-  const [hoursPerWeek, setHoursPerWeek] = useState("");
-  const [platformFee, setPlatformFee] = useState("");
-  const [tax, setTax] = useState("");
+export default function HomePage() {
+  const [monthlyIncome, setMonthlyIncome] = useState<number | null>(null);
+  const [hoursPerWeek, setHoursPerWeek] = useState<number | null>(null);
+  const [platformFee, setPlatformFee] = useState<number>(0);
+  const [tax, setTax] = useState<number>(0);
 
-  const result = useMemo(() => {
-    const weeksPerMonth = 4.33;
+  const inputClass =
+    "w-full bg-white text-slate-900 placeholder:text-slate-500 border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
-    const goal = Number(monthlyGoal.replace(/\./g, ""));
-    const hours = Number(hoursPerWeek);
-    const platformPct = Number(platformFee);
-    const taxPct = Number(tax);
+  const formatNumber = (value: number | null) =>
+    value === null ? "" : value.toLocaleString("en-US");
 
-    if (!monthlyGoal || !hoursPerWeek) {
-      return { ready: false, hourlyRate: 0, monthlyHours: 0 };
+  const parseNumber = (value: string) =>
+    Number(value.replace(/[^0-9]/g, ""));
+
+  const recommendedHourlyRate = useMemo(() => {
+    if (
+      monthlyIncome === null ||
+      hoursPerWeek === null ||
+      monthlyIncome <= 0 ||
+      hoursPerWeek < 1 ||
+      hoursPerWeek > 168
+    ) {
+      return null;
     }
 
-    if (goal <= 0 || hours <= 0 || hours > 168) {
-      return { ready: false, hourlyRate: 0, monthlyHours: 0 };
-    }
+    const monthlyHours = hoursPerWeek * 4;
+    const baseRate = monthlyIncome / monthlyHours;
 
-    const monthlyHours = hours * weeksPerMonth;
+    const denom = 1 - platformFee / 100 - tax / 100;
+    if (denom <= 0) return null;
 
-    const platformKeep = platformPct > 0 ? 1 - platformPct / 100 : 1;
-    const taxKeep = taxPct > 0 ? 1 - taxPct / 100 : 1;
+    const rate = baseRate / denom;
+    return Number.isFinite(rate) ? rate : null;
+  }, [monthlyIncome, hoursPerWeek, platformFee, tax]);
 
-    if (platformKeep <= 0 || taxKeep <= 0) {
-      return { ready: false, hourlyRate: 0, monthlyHours };
-    }
-
-    const hourlyRate =
-      goal / monthlyHours / platformKeep / taxKeep;
-
-    return {
-      ready: true,
-      hourlyRate,
-      monthlyHours,
-    };
-  }, [monthlyGoal, hoursPerWeek, platformFee, tax]);
-
-  const roundedRate = result.ready ? Math.round(result.hourlyRate) : 0;
+  const formattedRate =
+    typeof recommendedHourlyRate === "number"
+      ? new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+          maximumFractionDigits: 2,
+        }).format(recommendedHourlyRate)
+      : null;
 
   return (
-    <main className="min-h-screen bg-white text-black">
-      <div className="mx-auto max-w-xl px-4 py-10">
-        <h1 className="mb-2 text-3xl font-bold">
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg p-8">
+        <h1 className="text-3xl font-bold text-slate-900 text-center">
           Freelancer Hourly Rate Calculator
         </h1>
-        <p className="mb-8 text-gray-600">
-          Enter your income goal and realistic working hours.
+
+        <p className="text-center text-slate-600 mt-2">
+          Calculate how much you should charge per hour to hit your monthly goal.
         </p>
 
-        <div className="space-y-4">
-          <CurrencyTRInput
-            label="Monthly income goal ($)"
-            placeholder="e.g. 100.000"
-            value={monthlyGoal}
-            onChange={setMonthlyGoal}
-          />
-
-          <HoursPerWeekInput
-            label="Hours per week"
-            placeholder="1 – 168"
-            value={hoursPerWeek}
-            onChange={setHoursPerWeek}
-          />
-
-          <PercentInput
-            label="Platform fee (%)"
-            placeholder="0 – 99"
-            value={platformFee}
-            onChange={setPlatformFee}
-          />
-
-          <PercentInput
-            label="Tax (%)"
-            placeholder="0 – 99"
-            value={tax}
-            onChange={setTax}
-          />
-        </div>
-
-        <div className="mt-8 rounded-xl bg-gray-100 p-6">
-          <div className="text-sm text-gray-600">
-            Recommended hourly rate
+        <div className="mt-8 space-y-5">
+          {/* Monthly income */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Monthly income goal
+            </label>
+            <input
+              value={formatNumber(monthlyIncome)}
+              onChange={(e) => {
+                const num = parseNumber(e.target.value);
+                setMonthlyIncome(num > 0 ? num : null);
+              }}
+              className={inputClass}
+              placeholder="e.g. 10,000"
+              inputMode="numeric"
+            />
           </div>
 
-          {result.ready ? (
-            <div className="mt-1 text-4xl font-bold">
-              ${roundedRate} / hour
-            </div>
-          ) : (
-            <div className="mt-2 text-gray-600">
-              Fill in <b>Monthly income goal</b> and <b>Hours per week</b> to see your rate.
-            </div>
-          )}
+          {/* Hours per week */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Hours per week
+            </label>
+            <input
+              value={hoursPerWeek ?? ""}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                if (raw === "") {
+                  setHoursPerWeek(null);
+                  return;
+                }
+                const num = Number(raw);
+                if (num >= 1 && num <= 168) setHoursPerWeek(num);
+              }}
+              className={inputClass}
+              placeholder="1 – 168"
+              inputMode="numeric"
+            />
+          </div>
 
-          {result.ready && (
-            <div className="mt-4 text-sm text-gray-700">
-              Based on ~{result.monthlyHours.toFixed(1)} hours/month
-              <InfoTooltip text="1 month ≈ 4.33 weeks (52 weeks ÷ 12 months)" />
+          {/* Platform fee */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Platform fee (%)
+            </label>
+            <input
+              value={platformFee}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                const num = raw === "" ? 0 : Number(raw);
+                if (num >= 0 && num <= 99) setPlatformFee(num);
+              }}
+              className={inputClass}
+              placeholder="0 – 99"
+              inputMode="numeric"
+            />
+          </div>
+
+          {/* Tax */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Tax (%)
+            </label>
+            <input
+              value={tax}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                const num = raw === "" ? 0 : Number(raw);
+                if (num >= 0 && num <= 99) setTax(num);
+              }}
+              className={inputClass}
+              placeholder="0 – 99"
+              inputMode="numeric"
+            />
+          </div>
+
+          {/* Result */}
+          <div className="mt-6 rounded-2xl bg-blue-50 border border-blue-200 p-5">
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-semibold text-blue-800">
+                Recommended hourly rate
+              </div>
+
+              {/* Tooltip */}
+              <div className="relative group">
+                <div className="w-5 h-5 rounded-full border border-blue-300 text-blue-700 flex items-center justify-center text-xs font-bold cursor-default">
+                  i
+                </div>
+                <div className="absolute left-0 top-7 hidden group-hover:block w-72 rounded-lg border border-slate-200 bg-white shadow-lg p-3 text-xs text-slate-700 z-10">
+                  This is the gross hourly rate you should charge to reach your
+                  monthly income goal, accounting for platform fee and tax.
+                </div>
+              </div>
             </div>
-          )}
+
+            {formattedRate ? (
+              <div className="mt-3 text-3xl font-semibold text-slate-900">
+                {formattedRate}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-700">
+                Fill in <b>monthly income</b> and <b>hours per week</b> to see your rate.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </main>
-  );
-}
-
-/* ---------- INPUTS ---------- */
-
-// Monthly income: 100000 -> 100.000 (TR format)
-function CurrencyTRInput(props: {
-  label: string;
-  placeholder?: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  function formatTR(digits: string) {
-    if (!digits || /^0+$/.test(digits)) return "";
-    const n = Number(digits);
-    if (!Number.isFinite(n) || n <= 0) return "";
-    return new Intl.NumberFormat("tr-TR", {
-      maximumFractionDigits: 0,
-    }).format(n);
-  }
-
-  return (
-    <label className="block">
-      <span className="block text-sm font-medium">{props.label}</span>
-      <input
-        type="text"
-        inputMode="numeric"
-        placeholder={props.placeholder}
-        className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
-        value={props.value}
-        onChange={(e) => {
-          const digits = e.target.value.replace(/\D/g, "");
-          props.onChange(formatTR(digits));
-        }}
-      />
-    </label>
-  );
-}
-
-// Hours per week: 1–168 only
-function HoursPerWeekInput(props: {
-  label: string;
-  placeholder?: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-medium">{props.label}</span>
-      <input
-        type="text"
-        inputMode="numeric"
-        placeholder={props.placeholder}
-        className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
-        value={props.value}
-        onChange={(e) => {
-          const digits = e.target.value.replace(/\D/g, "");
-          if (!digits) {
-            props.onChange("");
-            return;
-          }
-
-          const n = Number(digits);
-
-          // allow only 1–168
-          if (Number.isFinite(n) && n >= 1 && n <= 168) {
-            props.onChange(String(n));
-          }
-        }}
-      />
-    </label>
-  );
-}
-
-// Percentage input: 0–99 only
-function PercentInput(props: {
-  label: string;
-  placeholder?: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-medium">{props.label}</span>
-      <input
-        type="text"
-        inputMode="numeric"
-        placeholder={props.placeholder}
-        className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
-        value={props.value}
-        onChange={(e) => {
-          let v = e.target.value.replace(/\D/g, "");
-          if (!v) {
-            props.onChange("");
-            return;
-          }
-          const n = Number(v);
-          if (Number.isFinite(n) && n >= 0 && n <= 99) {
-            props.onChange(String(n));
-          }
-        }}
-      />
-    </label>
-  );
-}
-
-function InfoTooltip({ text }: { text: string }) {
-  return (
-    <span className="relative inline-block group ml-1">
-      <span className="cursor-help text-gray-500">ⓘ</span>
-      <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 w-56 -translate-x-1/2 rounded-md bg-black px-3 py-2 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-        {text}
-      </span>
-    </span>
   );
 }
