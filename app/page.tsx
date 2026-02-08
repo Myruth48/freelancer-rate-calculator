@@ -14,8 +14,7 @@ export default function HomePage() {
   const formatNumber = (value: number | null) =>
     value === null ? "" : value.toLocaleString("en-US");
 
-  const parseNumber = (value: string) =>
-    Number(value.replace(/[^0-9]/g, ""));
+  const parseNumber = (value: string) => Number(value.replace(/[^0-9]/g, ""));
 
   const recommendedHourlyRate = useMemo(() => {
     if (
@@ -59,10 +58,10 @@ export default function HomePage() {
         </p>
 
         <p className="text-center text-slate-600 mt-2 max-w-md mx-auto">
-          This freelancer hourly rate calculator helps you determine how much you should
-          charge per hour based on your monthly income goals, working hours, platform
-          fees, and taxes. Ideal for freelancers, consultants, and independent
-          professionals.
+          This freelancer hourly rate calculator helps you determine how much you
+          should charge per hour based on your monthly income goals, working
+          hours, platform fees, and taxes. Ideal for freelancers, consultants,
+          and independent professionals.
         </p>
 
         <div className="mt-8 space-y-5">
@@ -166,11 +165,23 @@ export default function HomePage() {
               </div>
             ) : (
               <p className="mt-3 text-sm text-slate-700">
-                Fill in <b>monthly income</b> and <b>hours per week</b> to see your rate.
+                Fill in <b>monthly income</b> and <b>hours per week</b> to see your
+                rate.
               </p>
             )}
           </div>
         </div>
+
+        {/* Footer links (AdSense essentials) */}
+        <footer className="mt-10 text-center text-sm text-slate-500">
+          <a href="/privacy-policy" className="underline mx-2">
+            Privacy Policy
+          </a>
+          |
+          <a href="/contact" className="underline mx-2">
+            Contact
+          </a>
+        </footer>
       </div>
     </main>
   );
