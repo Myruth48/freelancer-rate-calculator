@@ -58,6 +58,13 @@ export default function HomePage() {
           Calculate how much you should charge per hour to hit your monthly goal.
         </p>
 
+        <p className="text-center text-slate-600 mt-2 max-w-md mx-auto">
+          This freelancer hourly rate calculator helps you determine how much you should
+          charge per hour based on your monthly income goals, working hours, platform
+          fees, and taxes. Ideal for freelancers, consultants, and independent
+          professionals.
+        </p>
+
         <div className="mt-8 space-y-5">
           {/* Monthly income */}
           <div>
